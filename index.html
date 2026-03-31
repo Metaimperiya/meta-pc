@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#008080" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Мой компьютер" />
+  <title>Мой компьютер</title>
+  <style>
+    :root {
+      --desktop-bg: #008080;
+      --taskbar-bg: #c0c0c0;
+      --taskbar-dark: #808080;
+      --taskbar-light: #ffffff;
+      --window-bg: #efefef;
+      --title-a: #000080;
+      --title-b: #1084d0;
+      --content-bg: #ffffff;
+      --selected-soft: #c8def0;
+      --text: #111;
+      --shadow: rgba(0, 0, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Tahoma, "Segoe UI", sans-serif;
+      background: var(--desktop-bg);
+    }
+    body { user-select: none; }
+
+    .desktop {
+      position: relative;
+      width: 100vw;
+      height: calc(100vh - 52px);
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 18px;
+    }
+
+    .desktop-item, .explorer-item {
+      width: 102px;
+      min-height: 104px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 6px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      border: 1px solid transparent;
+    }
+
+    .desktop-item {
+      color: #fff;
+      text-shadow: 1px 1px 1px #000;
+    }
+    .desktop-item:hover {
+      background: rgba(255,255,255,0.08);
+      border: 1px dotted rgba(255,255,255,0.55);
+    }
+    .desktop-item.selected, .explorer-item.selected {
+      background: rgba(10, 100, 173, 0.28);
+      outline: 1px dotted rgba(255,255,255,0.85);
+    }
+
+    .explorer-item {
+      color: var(--text);
+      text-shadow: none;
+      min-height: 112px;
+    }
+    .explorer-item:hover {
+      background: #eaf3fb;
+      border: 1px dotted #7f9db9;
+    }
+    .explorer-item.selected {
+      background: var(--selected-soft);
+      outline: 1px dotted #234;
+    }
+
+    .icon-label {
+      font-size: 13px;
+      line-height: 1.2;
+      text-align: center;
+      max-width: 100%;
+      word-break: break-word;
+      padding: 1px 3px;
+    }
+    .icon-svg {
+      width: 52px;
+      height: 52px;
+      flex: 0 0 auto;
+    }
+
+    .window {
+      position: absolute;
+      top: 44px;
+      left: 120px;
+      width: 860px;
+      height: 560px;
+      background: var(--window-bg);
+      border: 2px solid;
+      border-color: var(--taskbar-light) var(--taskbar-dark) var(--taskbar-dark) var(--taskbar-light);
+      box-shadow: 4px 4px 12px var(--shadow);
+      display: none;
+      flex-direction: column;
+      z-index: 20;
+    }
+    .window.active { display: flex; }
+
+    .title-bar {
+      background: linear-gradient(90deg, var(--title-a), var(--title-b));
+      color: white;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px 0 8px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: move;
+    }
+    .title-left { display: flex; align-items: center; gap: 8px; }
+    .title-controls { display: flex; gap: 2px; }
+
+    .win-btn, .toolbar-btn, .start-btn, .dialog-btn, .install-fab {
+      border: 2px solid;
+      border-color: var(--taskbar-light) var(--taskbar-dark) var(--taskbar-dark) var(--taskbar-light);
+      background: var(--taskbar-bg);
+      color: #000;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .win-btn:active, .toolbar-btn:active, .start-btn:active, .dialog-btn:active, .install-fab:active, .task-btn.active {
+      border-color: var(--taskbar-dark) var(--taskbar-light) var(--taskbar-light) var(--taskbar-dark);
+    }
+    .win-btn {
+      width: 28px;
+      height: 24px;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 0;
+    }
+
+    .menubar {
+      display: flex;
+      gap: 18px;
+      padding: 5px 10px;
+      font-size: 13px;
+      background: #ece9d8;
+      border-bottom: 1px solid #c2c2c2;
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px;
+      background: #ece9d8;
+      border-bottom: 1px solid #c2c2c2;
+      flex-wrap: wrap;
+    }
+    .toolbar-btn {
+      min-width: 86px;
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+
+    .address-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: #ece9d8;
+      border-bottom: 1px solid #c2c2c2;
+      font-size: 13px;
+    }
+    .address-box {
+      flex: 1;
+      border: 2px solid;
+      border-color: var(--taskbar-dark) var(--taskbar-light) var(--taskbar-light) var(--taskbar-dark);
+      background: #fff;
+      padding: 6px 8px;
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .window-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 0;
+    }
+    .sidebar {
+      background: #f7f7f7;
+      border-right: 1px solid #b6b6b6;
+      padding: 10px 8px;
+      overflow: auto;
+    }
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: bold;
+      margin: 4px 4px 10px;
+      color: #234;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 8px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .sidebar-item:hover { background: #e7f0fa; border: 1px dotted #6d8bab; }
+    .sidebar-item.active { background: #d8e9f7; border: 1px solid #9bb7d0; }
+
+    .content-wrap {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background: var(--content-bg);
+    }
+    .content-header {
+      padding: 12px 14px 8px;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+      font-size: 13px;
+      color: #444;
+    }
+    .content-title {
+      margin: 0 0 4px;
+      font-size: 24px;
+      color: #0a2c47;
+      font-weight: normal;
+    }
+    .explorer-grid {
+      flex: 1;
+      overflow: auto;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(106px, 1fr));
+      align-content: start;
+      gap: 18px 10px;
+    }
+    .statusbar {
+      border-top: 1px solid #c2c2c2;
+      background: #ece9d8;
+      padding: 5px 8px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .taskbar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 52px;
+      background: var(--taskbar-bg);
+      border-top: 2px solid var(--taskbar-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      z-index: 100;
+    }
+    .task-left, .task-center, .task-right { display: flex; align-items: center; gap: 5px; }
+    .start-btn {
+      padding: 5px 12px;
+      font-weight: bold;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+    }
+    .task-btn {
+      min-width: 165px;
+      max-width: 240px;
+      height: 36px;
+      padding: 0 10px;
+      border: 2px solid;
+      border-color: var(--taskbar-light) var(--taskbar-dark) var(--taskbar-dark) var(--taskbar-light);
+      background: #d4d0c8;
+      font-size: 13px;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .task-btn.hidden { display: none; }
+    .task-btn.active { background: #bbb8b0; }
+    .tray {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 2px solid;
+      border-color: var(--taskbar-dark) var(--taskbar-light) var(--taskbar-light) var(--taskbar-dark);
+      background: #d4d0c8;
+      padding: 3px 9px;
+      height: 32px;
+      font-size: 13px;
+    }
+
+    .start-menu {
+      position: absolute;
+      bottom: 52px;
+      left: 0;
+      width: 320px;
+      height: 430px;
+      background: #c0c0c0;
+      border: 2px solid;
+      border-color: var(--taskbar-light) var(--taskbar-dark) var(--taskbar-dark) var(--taskbar-light);
+      display: none;
+      z-index: 200;
+      box-shadow: 3px 3px 10px rgba(0,0,0,0.35);
+    }
+    .start-menu.open {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+    }
+    .start-side {
+      background: linear-gradient(180deg, #0b57a4, #08275b);
+      color: white;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      text-align: center;
+      font-weight: bold;
+      letter-spacing: 1px;
+      padding: 10px 0;
+      font-size: 16px;
+    }
+    .start-main {
+      background: #d4d0c8;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .start-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 9px;
+      cursor: pointer;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+    .start-item:hover { background: #0a64ad; color: #fff; }
+    .menu-sep { height: 1px; background: #808080; margin: 4px 0; }
+
+    .context-menu {
+      position: absolute;
+      min-width: 200px;
+      background: #d4d0c8;
+      border: 2px solid;
+      border-color: var(--taskbar-light) var(--taskbar-dark) var(--taskbar-dark) var(--taskbar-light);
+      display: none;
+      z-index: 500;
+      padding: 3px;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.25);
+    }
+    .context-menu.open { display: block; }
+    .menu-item {
+      padding: 8px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .menu-item:hover { background: #0a64ad; color: #fff; }
+
+    .dialog {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 340px;
+      background: #d4d0c8;
+      border: 2px solid;
+      border-color: var(--taskbar-light) var(--taskbar-dark) var(--taskbar-dark) var(--taskbar-light);
+      box-shadow: 4px 4px 12px rgba(0,0,0,0.35);
+      display: none;
+      z-index: 600;
+    }
+    .dialog.open { display: block; }
+    .dialog-title {
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      color: #fff;
+      background: linear-gradient(90deg, var(--title-a), var(--title-b));
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .dialog-body { padding: 14px; font-size: 13px; }
+    .dialog-body label { display: block; margin-bottom: 8px; }
+    .dialog-body input {
+      width: 100%;
+      padding: 7px 8px;
+      border: 2px solid;
+      border-color: var(--taskbar-dark) var(--taskbar-light) var(--taskbar-light) var(--taskbar-dark);
+      font-family: inherit;
+      font-size: 13px;
+      background: #fff;
+    }
+    .dialog-body p { margin: 0 0 8px; line-height: 1.4; }
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 0 14px 14px;
+    }
+    .dialog-btn {
+      min-width: 78px;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .install-fab {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      z-index: 50;
+      padding: 8px 11px;
+      font-size: 13px;
+      display: none;
+    }
+    .install-fab.show { display: block; }
+
+    .mobile-tip {
+      position: absolute;
+      right: 10px;
+      top: 48px;
+      z-index: 49;
+      max-width: 280px;
+      background: #ffffe1;
+      color: #000;
+      border: 2px solid;
+      border-color: var(--taskbar-light) var(--taskbar-dark) var(--taskbar-dark) var(--taskbar-light);
+      padding: 8px 10px;
+      font-size: 12px;
+      display: none;
+      line-height: 1.35;
+    }
+    .mobile-tip.show { display: block; }
+
+    @media (max-width: 900px) {
+      .window {
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: calc(100vh - 52px) !important;
+      }
+      .window-body { grid-template-columns: 160px 1fr; }
+      .toolbar-btn { min-width: auto; }
+    }
+
+    @media (max-width: 700px) {
+      .desktop {
+        height: calc(100vh - 56px);
+        padding: 14px 8px;
+        gap: 10px;
+      }
+      .desktop-item, .explorer-item {
+        width: 96px;
+        min-height: 100px;
+      }
+      .icon-svg {
+        width: 48px;
+        height: 48px;
+      }
+      .taskbar {
+        height: 56px;
+      }
+      .start-menu {
+        bottom: 56px;
+        width: 100vw;
+        height: min(430px, 75vh);
+      }
+      .window-body {
+        grid-template-columns: 132px 1fr;
+      }
+      .install-fab {
+        display: block;
+        right: 6px;
+        top: 6px;
+      }
+      .mobile-tip {
+        right: 6px;
+        top: 44px;
+        max-width: 220px;
+      }
+      .content-title {
+        font-size: 20px;
+      }
+      .toolbar {
+        gap: 4px;
+      }
+      .toolbar-btn {
+        padding: 7px 8px;
+        font-size: 12px;
+      }
+      .task-btn {
+        min-width: 132px;
+        max-width: 170px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="install-fab" id="installBtn">+ На экран</button>
+  <div class="mobile-tip" id="mobileTip"></div>
+
+  <div class="desktop" id="desktop"></div>
+
+  <div class="window active" id="explorerWindow">
+    <div class="title-bar" id="dragHandle">
+      <div class="title-left">
+        <span>📁</span>
+        <span id="windowTitle">Проводник</span>
+      </div>
+      <div class="title-controls">
+        <button class="win-btn" id="minBtn">_</button>
+        <button class="win-btn" id="maxBtn">□</button>
+        <button class="win-btn" id="closeBtn">X</button>
+      </div>
+    </div>
+
+    <div class="menubar">
+      <span>Файл</span>
+      <span>Правка</span>
+      <span>Вид</span>
+      <span>Избранное</span>
+      <span>Сервис</span>
+      <span>Справка</span>
+    </div>
+
+    <div class="toolbar">
+      <button class="toolbar-btn" id="backBtn">Назад</button>
+      <button class="toolbar-btn" id="forwardBtn">Вперёд</button>
+      <button class="toolbar-btn" id="upBtn">Вверх</button>
+      <button class="toolbar-btn" id="refreshBtn">Обновить</button>
+      <button class="toolbar-btn" id="newFolderBtn">Новая папка</button>
+      <button class="toolbar-btn" id="saveBtn">Сохранить</button>
+      <button class="toolbar-btn" id="resetBtn">Сброс</button>
+    </div>
+
+    <div class="address-row">
+      <span>Адрес:</span>
+      <div class="address-box" id="addressBox"></div>
+    </div>
+
+    <div class="window-body">
+      <aside class="sidebar" id="sidebar"></aside>
+      <section class="content-wrap">
+        <div class="content-header">
+          <h2 class="content-title" id="contentTitle">Рабочий стол</h2>
+          <div id="contentMeta">0 объектов</div>
+        </div>
+        <div class="explorer-grid" id="explorerGrid"></div>
+        <div class="statusbar">
+          <span id="statusText">Готово</span>
+          <span id="pathText">Desktop</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="start-menu" id="startMenu">
+    <div class="start-side">Windows</div>
+    <div class="start-main">
+      <div class="start-item" data-start-open="desktop">🖥️ Рабочий стол</div>
+      <div class="start-item" data-start-open="computer">💻 Мой компьютер</div>
+      <div class="start-item" data-start-open="familyRoot">📁 Папа → Мама → Дети</div>
+      <div class="start-item" data-start-open="chatgptShortcut">🧠 ChatGPT</div>
+      <div class="start-item" data-start-open="googleShortcut">🌐 Google</div>
+      <div class="start-item" data-start-open="geminiShortcut">✨ Gemini</div>
+      <div class="start-item" data-start-open="deepseekShortcut">🔷 DeepSeek</div>
+      <div class="menu-sep"></div>
+      <div class="start-item" data-start-open="diskC">💿 Локальный диск (C:)</div>
+      <div class="start-item" data-start-open="diskD">💿 Локальный диск (D:)</div>
+      <div class="menu-sep"></div>
+      <div class="start-item" id="startNewFolder">📁 Создать папку</div>
+      <div class="start-item" id="startSave">💾 Сохранить</div>
+      <div class="start-item" id="startInstall">📲 На экран телефона</div>
+      <div class="menu-sep"></div>
+      <div class="start-item" id="startCloseExplorer">❌ Закрыть окно</div>
+    </div>
+  </div>
+
+  <div class="taskbar">
+    <div class="task-left">
+      <button class="start-btn" id="startBtn">🟩 Пуск</button>
+      <button class="task-btn active" id="taskExplorer">📁 Проводник</button>
+    </div>
+    <div class="task-center"></div>
+    <div class="task-right">
+      <div class="tray">🔊 📶 <span id="clock"></span></div>
+    </div>
+  </div>
+
+  <div class="context-menu" id="desktopMenu">
+    <div class="menu-item" data-menu-action="create-folder-desktop">Создать папку</div>
+    <div class="menu-item" data-menu-action="refresh">Обновить</div>
+    <div class="menu-item" data-menu-action="open-desktop">Открыть рабочий стол</div>
+  </div>
+
+  <div class="context-menu" id="explorerMenu">
+    <div class="menu-item" data-menu-action="create-folder-current">Создать папку</div>
+    <div class="menu-item" data-menu-action="refresh">Обновить</div>
+    <div class="menu-item" data-menu-action="up">На уровень вверх</div>
+  </div>
+
+  <div class="dialog" id="folderDialog">
+    <div class="dialog-title">
+      <span>Новая папка</span>
+      <span>📁</span>
+    </div>
+    <div class="dialog-body">
+      <label for="folderNameInput">Имя новой папки:</label>
+      <input id="folderNameInput" type="text" value="Новая папка" maxlength="40" />
+    </div>
+    <div class="dialog-actions">
+      <button class="dialog-btn" id="cancelCreateBtn">Отмена</button>
+      <button class="dialog-btn" id="confirmCreateBtn">OK</button>
+    </div>
+  </div>
+
+  <div class="dialog" id="infoDialog">
+    <div class="dialog-title">
+      <span>Добавление на экран</span>
+      <span>📲</span>
+    </div>
+    <div class="dialog-body" id="infoDialogBody"></div>
+    <div class="dialog-actions">
+      <button class="dialog-btn" id="closeInfoBtn">OK</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'my-computer-webos-state-v3';
+    const COUNTER_KEY = 'my-computer-webos-counter-v3';
+
+    const defaultFs = {
+      desktop: { id: 'desktop', name: 'Рабочий стол', type: 'folder', children: ['computerShortcut', 'familyRoot', 'chatgptShortcut', 'googleShortcut', 'geminiShortcut', 'deepseekShortcut', 'folderDesktop01', 'folderDesktop02'] },
+      computer: { id: 'computer', name: 'Мой компьютер', type: 'folder', children: ['diskC', 'diskD', 'chatgptShortcut', 'googleShortcut', 'geminiShortcut', 'deepseekShortcut'] },
+      diskC: { id: 'diskC', name: 'Локальный диск (C:)', type: 'drive', children: ['folderC1', 'folderC2', 'rootArchive'] },
+      diskD: { id: 'diskD', name: 'Локальный диск (D:)', type: 'drive', children: ['folderD1'] },
+
+      folderDesktop01: { id: 'folderDesktop01', name: 'Проекты', type: 'folder', children: [] },
+      folderDesktop02: { id: 'folderDesktop02', name: 'Материалы', type: 'folder', children: [] },
+      folderC1: { id: 'folderC1', name: 'Program Files', type: 'folder', children: [] },
+      folderC2: { id: 'folderC2', name: 'Users', type: 'folder', children: [] },
+      folderD1: { id: 'folderD1', name: 'Games', type: 'folder', children: [] },
+      rootArchive: { id: 'rootArchive', name: 'Архив', type: 'folder', children: [] },
+
+      computerShortcut: { id: 'computerShortcut', name: 'Мой компьютер', type: 'shortcut', target: 'computer' },
+      chatgptShortcut: { id: 'chatgptShortcut', name: 'ChatGPT', type: 'app', url: 'https://chatgpt.com' },
+      googleShortcut: { id: 'googleShortcut', name: 'Google', type: 'app', url: 'https://www.google.com' },
+      geminiShortcut: { id: 'geminiShortcut', name: 'Gemini', type: 'app', url: 'https://gemini.google.com' },
+      deepseekShortcut: { id: 'deepseekShortcut', name: 'DeepSeek', type: 'app', url: 'https://www.deepseek.com' },
+
+      familyRoot: { id: 'familyRoot', name: 'Папа', type: 'folder', children: ['familyMama'] },
+      familyMama: { id: 'familyMama', name: 'Мама', type: 'folder', children: ['familyKids'] },
+      familyKids: { id: 'familyKids', name: 'Дети', type: 'folder', children: ['familyGrandkids'] },
+      familyGrandkids: { id: 'familyGrandkids', name: 'Внуки', type: 'folder', children: ['familyGreatGrandkids'] },
+      familyGreatGrandkids: { id: 'familyGreatGrandkids', name: 'Правнуки', type: 'folder', children: ['familyLevel01', 'familyLevel02', 'familyLevel03'] },
+
+      familyLevel01: { id: 'familyLevel01', name: 'Раздел 01', type: 'folder', children: ['familyLevel01A', 'familyLevel01B', 'familyLevel01C'] },
+      familyLevel01A: { id: 'familyLevel01A', name: 'Подпапка 01-A', type: 'folder', children: ['familyLevel01A1', 'familyLevel01A2'] },
+      familyLevel01A1: { id: 'familyLevel01A1', name: 'Ветка 01-A-1', type: 'folder', children: [] },
+      familyLevel01A2: { id: 'familyLevel01A2', name: 'Ветка 01-A-2', type: 'folder', children: [] },
+      familyLevel01B: { id: 'familyLevel01B', name: 'Подпапка 01-B', type: 'folder', children: [] },
+      familyLevel01C: { id: 'familyLevel01C', name: 'Подпапка 01-C', type: 'folder', children: [] },
+
+      familyLevel02: { id: 'familyLevel02', name: 'Раздел 02', type: 'folder', children: ['familyLevel02A', 'familyLevel02B'] },
+      familyLevel02A: { id: 'familyLevel02A', name: 'Подпапка 02-A', type: 'folder', children: ['familyLevel02A1'] },
+      familyLevel02A1: { id: 'familyLevel02A1', name: 'Ветка 02-A-1', type: 'folder', children: [] },
+      familyLevel02B: { id: 'familyLevel02B', name: 'Подпапка 02-B', type: 'folder', children: [] },
+
+      familyLevel03: { id: 'familyLevel03', name: 'Раздел 03', type: 'folder', children: ['familyLevel03A', 'familyLevel03B', 'familyLevel03C'] },
+      familyLevel03A: { id: 'familyLevel03A', name: 'Подпапка 03-A', type: 'folder', children: [] },
+      familyLevel03B: { id: 'familyLevel03B', name: 'Подпапка 03-B', type: 'folder', children: [] },
+      familyLevel03C: { id: 'familyLevel03C', name: 'Подпапка 03-C', type: 'folder', children: ['familyLevel03C1'] },
+      familyLevel03C1: { id: 'familyLevel03C1', name: 'Ветка 03-C-1', type: 'folder', children: [] }
+    };
+
+    const state = {
+      currentPath: ['desktop'],
+      history: [],
+      historyIndex: -1,
+      selectedDesktopId: null,
+      selectedExplorerId: null,
+      createTargetPath: ['desktop'],
+      windowMaximized: false,
+      explorerVisible: true
+    };
+
+    let fs = {};
+    let idCounter = 100;
+    let deferredPrompt = null;
+
+    const desktop = document.getElementById('desktop');
+    const explorerGrid = document.getElementById('explorerGrid');
+    const sidebar = document.getElementById('sidebar');
+    const addressBox = document.getElementById('addressBox');
+    const contentTitle = document.getElementById('contentTitle');
+    const contentMeta = document.getElementById('contentMeta');
+    const statusText = document.getElementById('statusText');
+    const pathText = document.getElementById('pathText');
+    const explorerWindow = document.getElementById('explorerWindow');
+    const windowTitle = document.getElementById('windowTitle');
+    const taskExplorer = document.getElementById('taskExplorer');
+    const startMenu = document.getElementById('startMenu');
+    const startBtn = document.getElementById('startBtn');
+    const desktopMenu = document.getElementById('desktopMenu');
+    const explorerMenu = document.getElementById('explorerMenu');
+    const folderDialog = document.getElementById('folderDialog');
+    const folderNameInput = document.getElementById('folderNameInput');
+    const installBtn = document.getElementById('installBtn');
+    const mobileTip = document.getElementById('mobileTip');
+    const infoDialog = document.getElementById('infoDialog');
+    const infoDialogBody = document.getElementById('infoDialogBody');
+
+    function clone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(fs));
+      localStorage.setItem(COUNTER_KEY, String(idCounter));
+      statusText.textContent = 'Сохранено';
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const rawCounter = localStorage.getItem(COUNTER_KEY);
+        fs = raw ? JSON.parse(raw) : clone(defaultFs);
+        idCounter = rawCounter ? Number(rawCounter) : 100;
+        if (!fs.desktop || !fs.computer || !fs.diskC || !fs.diskD) throw new Error('broken state');
+      } catch (e) {
+        fs = clone(defaultFs);
+        idCounter = 100;
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(COUNTER_KEY);
+      }
+    }
+
+    function resetState() {
+      fs = clone(defaultFs);
+      idCounter = 100;
+      saveState();
+      renderDesktop();
+      navigateTo(['desktop']);
+    }
+
+    function getNode(id) { return fs[id]; }
+    function getCurrentNode() { return getNode(state.currentPath[state.currentPath.length - 1]); }
+    function getResolvedId(item) { return item.type === 'shortcut' ? item.target : item.id; }
+
+    function iconSvg(type, name = '') {
+      const appLabel = name.toLowerCase();
+      if (type === 'app' && appLabel.includes('chatgpt')) {
+        return '<svg class="icon-svg" viewBox="0 0 64 64" fill="none"><rect x="8" y="8" width="48" height="48" rx="12" fill="#101010"/><path d="M32 18c4-3 11 0 11 6 4 1 7 6 5 11 2 4 0 10-5 12-1 4-7 7-12 5-4 2-10 0-12-5-4-1-7-7-5-12-2-4 1-10 5-11 1-5 7-8 13-6z" stroke="#fff" stroke-width="3"/><path d="M25 24l14 8M24 40l16-9M25 24v16M39 24l-14 8M39 40V24" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>';
+      }
+      if (type === 'app' && appLabel.includes('google')) {
+        return '<svg class="icon-svg" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="24" fill="#fff"/><path d="M52 33c0-1-.1-2-.3-3H32v7h11.3c-.5 2.6-2 4.8-4.2 6.2v5.1h6.8C49.8 44.7 52 39.5 52 33z" fill="#4285F4"/><path d="M32 56c5.7 0 10.5-1.9 14-5.2l-6.8-5.1c-1.9 1.3-4.2 2.1-7.2 2.1-5.5 0-10.2-3.7-11.9-8.8H13v5.5A24 24 0 0 0 32 56z" fill="#34A853"/><path d="M20.1 39c-.4-1.2-.7-2.4-.7-3.8s.2-2.6.7-3.8v-5.5H13a24 24 0 0 0 0 18.6l7.1-5.5z" fill="#FBBC05"/><path d="M32 22.2c3.1 0 5.9 1.1 8.1 3.2l6.1-6.1C42.5 15.9 37.7 14 32 14A24 24 0 0 0 13 25.9l7.1 5.5c1.7-5.1 6.4-8.8 11.9-8.8z" fill="#EA4335"/></svg>';
+      }
+      if (type === 'app' && appLabel.includes('gemini')) {
+        return '<svg class="icon-svg" viewBox="0 0 64 64" fill="none"><rect x="8" y="8" width="48" height="48" rx="12" fill="#f7f2ff"/><path d="M32 14l4.5 13.5L50 32l-13.5 4.5L32 50l-4.5-13.5L14 32l13.5-4.5L32 14z" fill="#7c5cff"/></svg>';
+      }
+      if (type === 'app' && appLabel.includes('deepseek')) {
+        return '<svg class="icon-svg" viewBox="0 0 64 64" fill="none"><rect x="8" y="8" width="48" height="48" rx="12" fill="#eef4ff"/><path d="M20 22c8-6 21-3 25 6 2 4 2 8 0 12-4 9-17 12-25 6 5 1 9 0 13-2 6-3 8-11 4-17-3-4-9-6-17-5z" fill="#2f5bff"/><circle cx="39" cy="29" r="2.5" fill="#fff"/></svg>';
+      }
+      const map = {
+        folder: '<svg class="icon-svg" viewBox="0 0 64 64" fill="none"><path d="M8 20a6 6 0 0 1 6-6h12l4 4h20a6 6 0 0 1 6 6v18a6 6 0 0 1-6 6H14a6 6 0 0 1-6-6V20z" fill="#ffd45a"/><path d="M8 25h48v17a6 6 0 0 1-6 6H14a6 6 0 0 1-6-6V25z" fill="#f0bc2f"/></svg>',
+        drive: '<svg class="icon-svg" viewBox="0 0 64 64" fill="none"><rect x="10" y="18" width="44" height="26" rx="4" fill="#d7d7d7" stroke="#6f6f6f"/><rect x="10" y="40" width="44" height="8" rx="2" fill="#b5b5b5"/><circle cx="45" cy="44" r="2.5" fill="#34a853"/></svg>',
+        shortcut: '<svg class="icon-svg" viewBox="0 0 64 64" fill="none"><rect x="10" y="12" width="44" height="28" rx="5" fill="#66b2ff"/><rect x="16" y="18" width="32" height="16" rx="3" fill="#dff0ff"/><rect x="24" y="43" width="16" height="4" rx="2" fill="#ced9e8"/><rect x="18" y="47" width="28" height="5" rx="2.5" fill="#92a4ba"/><path d="M8 50l10-2-5 8 1-5-6-1z" fill="#fff" stroke="#000"/></svg>'
+      };
+      return map[type] || map.folder;
+    }
+
+    function decl(n) {
+      if (n % 10 === 1 && n % 100 !== 11) return '';
+      if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'а';
+      return 'ов';
+    }
+
+    function buildPathLabel(path) {
+      return path.map(id => getNode(id).name).join(' \\ ');
+    }
+
+    function buildSidebar() {
+      const items = [
+        ['desktop', '🖥️', 'Рабочий стол'],
+        ['computer', '💻', 'Мой компьютер'],
+        ['familyRoot', '📁', 'Папа → Мама → Дети'],
+        ['chatgptShortcut', '🧠', 'ChatGPT'],
+        ['googleShortcut', '🌐', 'Google'],
+        ['geminiShortcut', '✨', 'Gemini'],
+        ['deepseekShortcut', '🔷', 'DeepSeek'],
+        ['diskC', '💿', 'Локальный диск (C:)'],
+        ['diskD', '💿', 'Локальный диск (D:)']
+      ];
+      const currentId = getCurrentNode().id;
+      sidebar.innerHTML = `
+        <div class="sidebar-title">Системные папки</div>
+        ${items.map(([id, emoji, label]) => `
+          <div class="sidebar-item ${currentId === id ? 'active' : ''}" data-open-id="${id}">
+            <span>${emoji}</span><span>${label}</span>
+          </div>
+        `).join('')}
+      `;
+      sidebar.querySelectorAll('[data-open-id]').forEach(el => {
+        el.addEventListener('click', () => openById(el.dataset.openId));
+      });
+    }
+
+    function renderDesktop() {
+      const desktopNode = getNode('desktop');
+      desktop.innerHTML = desktopNode.children.map(id => {
+        const item = getNode(id);
+        return `
+          <div class="desktop-item ${state.selectedDesktopId === item.id ? 'selected' : ''}" data-id="${item.id}">
+            ${iconSvg(item.type, item.name)}
+            <div class="icon-label">${item.name}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderExplorer() {
+      const node = getCurrentNode();
+      const items = (node.children || []).map(id => getNode(id));
+
+      explorerGrid.innerHTML = items.map(item => `
+        <div class="explorer-item ${state.selectedExplorerId === item.id ? 'selected' : ''}" data-id="${item.id}">
+          ${iconSvg(item.type, item.name)}
+          <div class="icon-label">${item.name}</div>
+        </div>
+      `).join('');
+
+      contentTitle.textContent = node.name;
+      contentMeta.textContent = `${items.length} объект${decl(items.length)}`;
+      statusText.textContent = items.length ? 'Готово' : 'Папка пуста';
+      pathText.textContent = buildPathLabel(state.currentPath);
+      addressBox.textContent = buildPathLabel(state.currentPath);
+      windowTitle.textContent = node.name;
+      buildSidebar();
+      updateToolbarState();
+      updateTaskbarState();
+    }
+
+    function pushHistory(path) {
+      const normalized = JSON.stringify(path);
+      const current = state.history[state.historyIndex] ? JSON.stringify(state.history[state.historyIndex]) : null;
+      if (normalized === current) return;
+      state.history = state.history.slice(0, state.historyIndex + 1);
+      state.history.push([...path]);
+      state.historyIndex = state.history.length - 1;
+    }
+
+    function navigateTo(path, fromHistory = false) {
+      state.currentPath = [...path];
+      state.selectedExplorerId = null;
+      if (!fromHistory) pushHistory(path);
+      showExplorer();
+      renderExplorer();
+    }
+
+    function openExternal(url, label) {
+      statusText.textContent = `Открывается ${label}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function openById(id) {
+      const item = getNode(id);
+      if (!item) return;
+      if (item.type === 'app') {
+        openExternal(item.url, item.name);
+        return;
+      }
+      if (['desktop', 'computer', 'diskC', 'diskD', 'familyRoot'].includes(item.id)) {
+        navigateTo([item.id]);
+        return;
+      }
+      openItem(item);
+    }
+
+    function openItem(item) {
+      const targetId = getResolvedId(item);
+      const target = getNode(targetId);
+      if (!target) return;
+      if (item.type === 'app') {
+        openExternal(item.url, item.name);
+        return;
+      }
+      if (['desktop', 'computer', 'diskC', 'diskD', 'familyRoot'].includes(target.id)) {
+        navigateTo([target.id]);
+        return;
+      }
+      navigateTo([...state.currentPath, target.id]);
+    }
+
+    function navigateBack() {
+      if (state.historyIndex > 0) {
+        state.historyIndex -= 1;
+        state.currentPath = [...state.history[state.historyIndex]];
+        state.selectedExplorerId = null;
+        showExplorer();
+        renderExplorer();
+      }
+    }
+
+    function navigateForward() {
+      if (state.historyIndex < state.history.length - 1) {
+        state.historyIndex += 1;
+        state.currentPath = [...state.history[state.historyIndex]];
+        state.selectedExplorerId = null;
+        showExplorer();
+        renderExplorer();
+      }
+    }
+
+    function navigateUp() {
+      if (state.currentPath.length > 1) navigateTo(state.currentPath.slice(0, -1));
+    }
+
+    function updateToolbarState() {
+      document.getElementById('backBtn').disabled = state.historyIndex <= 0;
+      document.getElementById('forwardBtn').disabled = state.historyIndex >= state.history.length - 1;
+      document.getElementById('upBtn').disabled = state.currentPath.length <= 1;
+    }
+
+    function updateTaskbarState() {
+      if (state.explorerVisible) {
+        taskExplorer.classList.remove('hidden');
+        taskExplorer.classList.add('active');
+        taskExplorer.textContent = `📁 ${getCurrentNode().name}`;
+      } else {
+        taskExplorer.classList.add('hidden');
+        taskExplorer.classList.remove('active');
+        taskExplorer.textContent = '📁 Проводник';
+      }
+    }
+
+    function ensureUniqueName(parentNode, baseName) {
+      const names = new Set((parentNode.children || []).map(id => getNode(id).name));
+      if (!names.has(baseName)) return baseName;
+      let i = 2;
+      while (names.has(`${baseName} (${i})`)) i++;
+      return `${baseName} (${i})`;
+    }
+
+    function openCreateDialog(targetPath) {
+      state.createTargetPath = [...targetPath];
+      folderNameInput.value = 'Новая папка';
+      folderDialog.classList.add('open');
+      setTimeout(() => { folderNameInput.focus(); folderNameInput.select(); }, 0);
+      closeMenus();
+    }
+
+    function closeCreateDialog() { folderDialog.classList.remove('open'); }
+
+    function createFolder(path, rawName) {
+      const parent = getNode(path[path.length - 1]);
+      if (!parent || !Array.isArray(parent.children)) return;
+      const clean = (rawName || '').trim() || 'Новая папка';
+      const finalName = ensureUniqueName(parent, clean);
+      const id = `folder_${idCounter++}`;
+      fs[id] = { id, name: finalName, type: 'folder', children: [] };
+      parent.children.push(id);
+      saveState();
+      renderDesktop();
+      renderExplorer();
+    }
+
+    function closeMenus() {
+      startMenu.classList.remove('open');
+      desktopMenu.classList.remove('open');
+      explorerMenu.classList.remove('open');
+      mobileTip.classList.remove('show');
+    }
+
+    function showMenu(menu, x, y) {
+      closeMenus();
+      menu.style.left = `${x}px`;
+      menu.style.top = `${y}px`;
+      menu.classList.add('open');
+    }
+
+    function showExplorer() {
+      state.explorerVisible = true;
+      explorerWindow.classList.add('active');
+      updateTaskbarState();
+    }
+
+    function hideExplorer() {
+      state.explorerVisible = false;
+      explorerWindow.classList.remove('active');
+      updateTaskbarState();
+    }
+
+    function refreshCurrent() {
+      renderDesktop();
+      renderExplorer();
+      statusText.textContent = 'Обновлено';
+    }
+
+    function showInfo(html) {
+      infoDialogBody.innerHTML = html;
+      infoDialog.classList.add('open');
+    }
+
+    function isIOS() {
+      return /iphone|ipad|ipod/i.test(navigator.userAgent);
+    }
+
+    function isInStandaloneMode() {
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    function showInstallHelp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.finally(() => {
+          deferredPrompt = null;
+          installBtn.classList.remove('show');
+        });
+        return;
+      }
+
+      if (isIOS()) {
+        showInfo('<p>На iPhone / iPad это делается вручную:</p><p><b>Safari → Поделиться → На экран «Домой»</b></p><p>После этого иконка сайта появится на рабочем столе телефона как приложение.</p>');
+        return;
+      }
+
+      showInfo('<p>Для нормальной установки на экран телефона сайт лучше запускать как PWA на хостинге с <b>manifest</b> и <b>service worker</b>.</p><p>Кнопка уже добавлена в Пуск и сверху. На Android при подходящих условиях откроется системное окно установки.</p>');
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.classList.add('show');
+    });
+
+    document.getElementById('backBtn').addEventListener('click', navigateBack);
+    document.getElementById('forwardBtn').addEventListener('click', navigateForward);
+    document.getElementById('upBtn').addEventListener('click', navigateUp);
+    document.getElementById('refreshBtn').addEventListener('click', refreshCurrent);
+    document.getElementById('newFolderBtn').addEventListener('click', () => openCreateDialog(state.currentPath));
+    document.getElementById('saveBtn').addEventListener('click', saveState);
+    document.getElementById('resetBtn').addEventListener('click', resetState);
+    document.getElementById('closeBtn').addEventListener('click', hideExplorer);
+    document.getElementById('minBtn').addEventListener('click', hideExplorer);
+    document.getElementById('maxBtn').addEventListener('click', () => {
+      state.windowMaximized = !state.windowMaximized;
+      if (state.windowMaximized) {
+        explorerWindow.style.top = '0px';
+        explorerWindow.style.left = '0px';
+        explorerWindow.style.width = '100vw';
+        explorerWindow.style.height = 'calc(100vh - 52px)';
+      } else {
+        explorerWindow.style.top = '44px';
+        explorerWindow.style.left = '120px';
+        explorerWindow.style.width = '860px';
+        explorerWindow.style.height = '560px';
+      }
+    });
+
+    taskExplorer.addEventListener('click', () => {
+      if (state.explorerVisible) hideExplorer();
+      else showExplorer();
+    });
+
+    startBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startMenu.classList.toggle('open');
+      desktopMenu.classList.remove('open');
+      explorerMenu.classList.remove('open');
+    });
+
+    document.querySelectorAll('[data-start-open]').forEach(el => {
+      el.addEventListener('click', () => {
+        openById(el.dataset.startOpen);
+        closeMenus();
+      });
+    });
+
+    document.getElementById('startNewFolder').addEventListener('click', () => openCreateDialog(state.currentPath));
+    document.getElementById('startSave').addEventListener('click', () => { saveState(); closeMenus(); });
+    document.getElementById('startInstall').addEventListener('click', () => { showInstallHelp(); closeMenus(); });
+    document.getElementById('startCloseExplorer').addEventListener('click', () => { hideExplorer(); closeMenus(); });
+    document.getElementById('confirmCreateBtn').addEventListener('click', () => {
+      createFolder(state.createTargetPath, folderNameInput.value);
+      closeCreateDialog();
+    });
+    document.getElementById('cancelCreateBtn').addEventListener('click', closeCreateDialog);
+    document.getElementById('closeInfoBtn').addEventListener('click', () => infoDialog.classList.remove('open'));
+    installBtn.addEventListener('click', showInstallHelp);
+
+    folderNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        createFolder(state.createTargetPath, folderNameInput.value);
+        closeCreateDialog();
+      }
+      if (e.key === 'Escape') closeCreateDialog();
+    });
+
+    desktop.addEventListener('click', (e) => {
+      const itemEl = e.target.closest('.desktop-item');
+      if (!itemEl) return;
+      state.selectedDesktopId = itemEl.dataset.id;
+      renderDesktop();
+      openItem(getNode(itemEl.dataset.id));
+    });
+
+    explorerGrid.addEventListener('click', (e) => {
+      const itemEl = e.target.closest('.explorer-item');
+      if (!itemEl) return;
+      state.selectedExplorerId = itemEl.dataset.id;
+      renderExplorer();
+      openItem(getNode(itemEl.dataset.id));
+    });
+
+    desktop.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      showMenu(desktopMenu, e.clientX, e.clientY);
+    });
+
+    explorerGrid.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      showMenu(explorerMenu, e.clientX, e.clientY);
+    });
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.menuAction;
+        if (action === 'create-folder-desktop') openCreateDialog(['desktop']);
+        if (action === 'create-folder-current') openCreateDialog(state.currentPath);
+        if (action === 'refresh') refreshCurrent();
+        if (action === 'open-desktop') navigateTo(['desktop']);
+        if (action === 'up') navigateUp();
+        closeMenus();
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      const withinMenu = e.target.closest('.context-menu') || e.target.closest('.start-menu') || e.target.closest('#startBtn') || e.target.closest('#installBtn') || e.target.closest('.dialog');
+      if (!withinMenu) closeMenus();
+    });
+
+    function initDrag() {
+      const handle = document.getElementById('dragHandle');
+      let dragging = false;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      handle.addEventListener('mousedown', (e) => {
+        if (state.windowMaximized) return;
+        dragging = true;
+        const rect = explorerWindow.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const maxLeft = window.innerWidth - explorerWindow.offsetWidth;
+        const maxTop = window.innerHeight - explorerWindow.offsetHeight - 52;
+        explorerWindow.style.left = `${Math.max(0, Math.min(maxLeft, e.clientX - offsetX))}px`;
+        explorerWindow.style.top = `${Math.max(0, Math.min(maxTop, e.clientY - offsetY))}px`;
+      });
+
+      window.addEventListener('mouseup', () => dragging = false);
+    }
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function initInstallHint() {
+      if (isInStandaloneMode()) return;
+      if (isIOS()) {
+        installBtn.classList.add('show');
+        mobileTip.textContent = 'Жми «На экран», потом Safari → Поделиться → На экран Домой.';
+        mobileTip.classList.add('show');
+      }
+    }
+
+    loadState();
+    setInterval(updateClock, 1000);
+    updateClock();
+    renderDesktop();
+    navigateTo(['desktop']);
+    initDrag();
+    initInstallHint();
+    updateTaskbarState();
+  </script>
+</body>
+</html>
